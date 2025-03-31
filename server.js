@@ -24,7 +24,7 @@ function authenticateToken(req, res, next) {
   });
 }
 
-app.post('/projects', authenticateToken, async (req, res) => {
+app.post('/api/projects', authenticateToken, async (req, res) => {
   try {
     const newProject = new Project(req.body);
     await newProject.save();
