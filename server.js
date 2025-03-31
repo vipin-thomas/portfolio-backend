@@ -98,12 +98,6 @@ app.post('/projects', async (req, res) => {
   }
 });
 
-const contactSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  message: String,
-  timestamp: { type: Date, default: Date.now }
-});
 
 app.post('/api/contact', async (req, res) => {
   try {
