@@ -65,7 +65,7 @@ const Contact = mongoose.model('Contact', contactSchema);
 
 
 // Routes
-app.get('/projects', async (req, res) => {
+app.get('/api/projects', async (req, res) => {
   try {
     const projects = await Project.find();
     res.json(projects);
