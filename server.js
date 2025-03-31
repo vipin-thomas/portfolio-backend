@@ -54,6 +54,16 @@ const projectSchema = new mongoose.Schema({
 
 const Project = mongoose.model('Project', projectSchema);
 
+const contactSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  message: String,
+  timestamp: { type: Date, default: Date.now }
+});
+
+const Contact = mongoose.model('Contact', contactSchema);
+
+
 // Routes
 app.get('/projects', async (req, res) => {
   try {
@@ -87,6 +97,24 @@ app.post('/projects', async (req, res) => {
     res.status(400).json({ error: 'Invalid project data' });
   }
 });
+
+const contactSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  message: String,
+  timestamp: { type: Date, default: Date.now }
+});
+
+app.post('/api/contact', async (req, res) => {
+  try {
+    const newContact = new Contact(req.body);
+    await newContact.save();
+    res.status(201).json({ message: 'Message received!' });
+  } catch (err) {
+    res.status(400).json({ error: 'Failed to submit message' });
+  }
+});
+
 
 // Start Server
 app.listen(PORT, () => {
