@@ -1,3 +1,4 @@
+require('dotenv').config();
 // server.js
 const promBundle = require('express-prom-bundle');
 const metricsMiddleware = promBundle({ includeMethod: true });
@@ -6,7 +7,8 @@ const jwt = require('jsonwebtoken');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
+const bcrypt = require('bcryptjs');
+const Admin = require('./models/Admin');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -53,6 +55,7 @@ const projectSchema = new mongoose.Schema({
   title: String,
   description: String,
   github: String,
+  link: String,
   tags: [String],
 });
 
@@ -78,29 +81,31 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
-  // ⚠️ For demo only — replace with DB later
-  if (username === 'admin' && password === 'devops123') {
-    const token = jwt.sign({ user: 'vipin' }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
+  try {
+    const admin = await Admin.findOne({ username });
+    if (!admin) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, admin.passwordHash);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign({ id: admin._id, username }, process.env.JWT_SECRET, {
+      expiresIn: '2h',
     });
-    return res.json({ token });
-  } else {
-    return res.status(401).json({ error: 'Invalid credentials' });
+
+    res.json({ token });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-app.post('/projects', async (req, res) => {
-  try {
-    const newProject = new Project(req.body);
-    await newProject.save();
-    res.status(201).json(newProject);
-  } catch (err) {
-    res.status(400).json({ error: 'Invalid project data' });
-  }
-});
 
 
 app.post('/api/contact', async (req, res) => {
@@ -110,6 +115,16 @@ app.post('/api/contact', async (req, res) => {
     res.status(201).json({ message: 'Message received!' });
   } catch (err) {
     res.status(400).json({ error: 'Failed to submit message' });
+  }
+});
+
+app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
+  try {
+    await Project.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Project deleted successfully' });
+  } catch (err) {
+    console.error('Delete error:', err);
+    res.status(500).json({ error: 'Failed to delete project' });
   }
 });
 
