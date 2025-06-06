@@ -8,6 +8,22 @@ pipeline {
     PROJECT_DIR = '/home/ubuntu/portfolio-backend'
   }
 
+  stages {
+    stage('Backup Existing Backend') {
+      steps {
+        sshagent(['jenkins-ec2-ssh']) {
+          sh """
+          ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            cd $PROJECT_DIR &&
+            mkdir -p ../portfolio-backend_backup_\$TIMESTAMP &&
+            cp -r . ../portfolio-backend_backup_\$TIMESTAMP || echo "No files to backup"
+            docker commit backend-api backend-api-backup:\$TIMESTAMP || echo "No container to commit"
+          '
+          """
+        }
+      }
+    }
 
     stage('Deploy Updated Backend') {
       steps {
