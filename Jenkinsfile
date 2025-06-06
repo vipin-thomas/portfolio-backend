@@ -25,7 +25,8 @@ pipeline {
               cd $PROJECT_DIR &&
               git pull origin main &&
               docker stop backend-api || true &&
-              docker rm backend-api || true &&
+              sleep 2 &&
+              docker rm -f backend-api || true &&
               docker build -t portfolio-backend . &&
               docker run -d --env-file .env -p 5001:5000 --name backend-api portfolio-backend
             '
