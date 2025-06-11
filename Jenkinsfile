@@ -14,7 +14,7 @@ pipeline {
         sshagent(['jenkins-ec2-ssh']) {
           // Sync Jenkins workspace to EC2 (excluding node_modules, .git)
           sh """
-            rsync -avz -e "ssh -o StrictHostKeyChecking=no" --delete --exclude=node_modules --exclude=.git ./ $EC2_USER@$EC2_HOST:$PROJECT_DIR
+            rsync -avz -e "ssh -o StrictHostKeyChecking=no" --delete --exclude=node_modules --exclude=.env --exclude=.git ./ $EC2_USER@$EC2_HOST:$PROJECT_DIR
           """
 
           // SSH into EC2 and build + restart Docker container
