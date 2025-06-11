@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     EC2_USER = 'ubuntu'
-    EC2_HOST = '18.234.64.100'
+    EC2_HOST = '54.235.3.176'
     PROJECT_DIR = '/home/ubuntu/portfolio-backend'
     BACKUP_DIR = '/home/ubuntu/portfolio-backups'
   }
