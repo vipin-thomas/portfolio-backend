@@ -13,6 +13,12 @@ pipeline {
       steps {
         sshagent(['jenkins-ec2-ssh']) {
           withCredentials([string(credentialsId: 'portfolio-env', variable: 'ENV_CONTENT')]) {
+            // First: Sync files from Jenkins to EC2 (excluding .env)
+            sh """
+              rsync -avz --delete --exclude=node_modules --exclude=.git --exclude=.env -e "ssh -o StrictHostKeyChecking=no" ./ $EC2_USER@$EC2_HOST:$PROJECT_DIR
+            """
+
+            // Second: SSH into EC2 to write the .env and run Docker
             sh """
               ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
                 mkdir -p $BACKUP_DIR
@@ -23,12 +29,7 @@ pipeline {
 
                 find $BACKUP_DIR -name "*.tar.gz" -type f -mtime +2 -delete
 
-                mkdir -p $PROJECT_DIR
-
-                rsync -avz --delete --exclude=node_modules --exclude=.git -e "ssh -o StrictHostKeyChecking=no" ./ $EC2_USER@$EC2_HOST:$PROJECT_DIR
-              '
-
-              ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
+                # Write .env using here-doc with preserved newlines
                 cat <<EOF > $PROJECT_DIR/.env
 $ENV_CONTENT
 EOF
