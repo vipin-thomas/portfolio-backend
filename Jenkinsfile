@@ -6,20 +6,24 @@ pipeline {
     EC2_HOST = '54.235.3.176'
     PROJECT_DIR = '/home/ubuntu/portfolio-backend'
     BACKUP_DIR = '/home/ubuntu/portfolio-backups'
+    ENV_SECRET = credentials('portfolio-env')  // 🔐 this is the Secret Text ID
   }
 
   stages {
     stage('Deploy Backend to EC2') {
       steps {
         sshagent(['jenkins-ec2-ssh']) {
-          // Sync Jenkins workspace to EC2 (excluding node_modules, .git)
           sh """
-            rsync -avz -e "ssh -o StrictHostKeyChecking=no" --delete --exclude=node_modules --exclude=.env --exclude=.git ./ $EC2_USER@$EC2_HOST:$PROJECT_DIR
-          """
+            # Sync code excluding .env
+            rsync -avz -e "ssh -o StrictHostKeyChecking=no" --delete \\
+              --exclude=node_modules --exclude=.git --exclude=.env ./ \\
+              $EC2_USER@$EC2_HOST:$PROJECT_DIR
 
-          // SSH into EC2 and build + restart Docker container
-          sh """
+            # SSH into EC2 to recreate .env and deploy
             ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
+              echo "$ENV_SECRET" > $PROJECT_DIR/.env
+              chmod 600 $PROJECT_DIR/.env
+
               mkdir -p $BACKUP_DIR
               TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
               if [ -d "$PROJECT_DIR" ]; then

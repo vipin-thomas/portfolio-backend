@@ -3,28 +3,31 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Admin = require('./models/Admin');
 
-// Replace with your real MongoDB connection string (same as in your backend .env)
-const MONGODB_URI = process.env.MONGO_URI || 'your-mongodb-uri-here';
+const username = process.env.ADMIN_USERNAME;
+const password = process.env.ADMIN_PASSWORD;
 
-async function seedAdmin() {
-  try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
-
-    const username = 'admin';
-    const password = 'secret123';
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    await Admin.deleteMany({}); // optional: clear all existing admins
-    await Admin.create({ username, passwordHash });
-
-    console.log('✅ Admin user created successfully');
-  } catch (err) {
-    console.error('Error seeding admin:', err);
-  } finally {
-    mongoose.disconnect();
-  }
+if (!username || !password) {
+  console.error('Missing ADMIN_USERNAME or ADMIN_PASSWORD in environment variables');
+  process.exit(1);
 }
 
-seedAdmin();
+const seed = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+
+    // Optional: Remove all existing admins
+    await Admin.deleteMany({});
+    console.log('Old admin(s) removed');
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newAdmin = new Admin({ username, password: hashedPassword });
+    await newAdmin.save();
+    console.log('New admin seeded');
+  } catch (err) {
+    console.error(err);
+  } finally {
+    await mongoose.disconnect();
+  }
+};
+
+seed();
