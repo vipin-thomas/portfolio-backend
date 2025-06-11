@@ -11,7 +11,13 @@ pipeline {
   stages {
     stage('Deploy Backend to EC2') {
       steps {
-        sshagent(['jenkins-ec2-ssh']) {  // Use credential ID directly here
+        sshagent(['jenkins-ec2-ssh']) {
+          // Sync Jenkins workspace to EC2 (excluding node_modules, .git)
+          sh """
+            rsync -avz -e "ssh -o StrictHostKeyChecking=no" --delete --exclude=node_modules --exclude=.git ./ $EC2_USER@$EC2_HOST:$PROJECT_DIR
+          """
+
+          // SSH into EC2 and build + restart Docker container
           sh """
             ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
               mkdir -p $BACKUP_DIR
@@ -23,7 +29,6 @@ pipeline {
               find $BACKUP_DIR -name "*.tar.gz" -type f -mtime +2 -delete
 
               cd $PROJECT_DIR &&
-              git pull origin main &&
               docker stop backend-api || true &&
               sleep 2 &&
               docker rm -f backend-api || true &&
